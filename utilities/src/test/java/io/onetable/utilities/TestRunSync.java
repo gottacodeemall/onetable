@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.onetable.iceberg.IcebergCatalogConfig;
-import io.onetable.utilities.RunSync.TableFormatClients;
-import io.onetable.utilities.RunSync.TableFormatClients.ClientConfig;
+import static io.onetable.utilities.Configurations.*;
 
 class TestRunSync {
 
@@ -39,7 +38,7 @@ class TestRunSync {
     String value = conf.get("fs.file.impl");
     Assertions.assertNull(value);
 
-    conf = RunSync.loadHadoopConf(null);
+    conf = loadHadoopConf(null);
     value = conf.get("fs.file.impl");
     Assertions.assertEquals("org.apache.hadoop.fs.LocalFileSystem", value);
   }
@@ -65,7 +64,7 @@ class TestRunSync {
             + "  </property>"
             + "</configuration>";
 
-    conf = RunSync.loadHadoopConf(customXmlConfig.getBytes());
+    conf = loadHadoopConf(customXmlConfig.getBytes());
     value = conf.get("fs.file.impl");
     Assertions.assertEquals("override_default_value", value);
     value = conf.get("fs.azure.account.oauth2.client.endpoint");
@@ -74,8 +73,8 @@ class TestRunSync {
 
   @Test
   public void testTableFormatClientConfigDefault() throws IOException {
-    TableFormatClients clients = RunSync.loadTableFormatClientConfigs(null);
-    Map<String, ClientConfig> tfClients = clients.getTableFormatsClients();
+    TableFormatClients clients = loadTableFormatClientConfigs(null);
+    Map<String, TableFormatClients.ClientConfig> tfClients = clients.getTableFormatsClients();
     Assertions.assertEquals(3, tfClients.size());
     Assertions.assertNotNull(tfClients.get("DELTA"));
     Assertions.assertNotNull(tfClients.get("HUDI"));
@@ -104,8 +103,8 @@ class TestRunSync {
             + "      foo: bar\n"
             + "  NEW_FORMAT:\n"
             + "    sourceClientProviderClass: bar\n";
-    TableFormatClients clients = RunSync.loadTableFormatClientConfigs(customClients.getBytes());
-    Map<String, ClientConfig> tfClients = clients.getTableFormatsClients();
+    TableFormatClients clients = loadTableFormatClientConfigs(customClients.getBytes());
+    Map<String, TableFormatClients.ClientConfig> tfClients = clients.getTableFormatsClients();
     Assertions.assertEquals(4, tfClients.size());
 
     Assertions.assertNotNull(tfClients.get("NEW_FORMAT"));
@@ -127,7 +126,7 @@ class TestRunSync {
             + "catalogOptions: \n"
             + "  option1: value1\n"
             + "  option2: value2";
-    IcebergCatalogConfig catalogConfig = RunSync.loadIcebergCatalogConfig(icebergConfig.getBytes());
+    IcebergCatalogConfig catalogConfig = loadIcebergCatalogConfig(icebergConfig.getBytes());
     Assertions.assertEquals("io.onetable.CatalogImpl", catalogConfig.getCatalogImpl());
     Assertions.assertEquals("test", catalogConfig.getCatalogName());
     Assertions.assertEquals(2, catalogConfig.getCatalogOptions().size());

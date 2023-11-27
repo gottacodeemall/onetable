@@ -18,16 +18,12 @@
  
 package io.onetable.utilities;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-import lombok.Data;
+
 import lombok.extern.log4j.Log4j2;
 
 import org.apache.commons.cli.CommandLine;
@@ -38,23 +34,12 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 
-import com.fasterxml.jackson.annotation.JsonMerge;
-import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.google.common.annotations.VisibleForTesting;
-
-import io.onetable.client.OneTableClient;
-import io.onetable.client.PerTableConfig;
-import io.onetable.client.SourceClientProvider;
-import io.onetable.hudi.ConfigurationBasedPartitionSpecExtractor;
-import io.onetable.hudi.HudiSourceConfig;
 import io.onetable.iceberg.IcebergCatalogConfig;
-import io.onetable.model.storage.TableFormat;
-import io.onetable.model.sync.SyncMode;
-import io.onetable.reflection.ReflectionUtils;
-import io.onetable.utilities.RunSync.TableFormatClients.ClientConfig;
+import static io.onetable.utilities.Configurations.*;
 
 /**
  * Provides a standalone runner for the sync process. See README.md for more details on how to run
@@ -121,154 +106,10 @@ public class RunSync {
       objectReader.readValue(inputStream);
     }
 
-    byte[] customConfig = getCustomConfigurations(cmd, HADOOP_CONFIG_PATH);
-    Configuration hadoopConf = loadHadoopConf(customConfig);
-    byte[] icebergCatalogConfigInput = getCustomConfigurations(cmd, ICEBERG_CATALOG_CONFIG_PATH);
-    IcebergCatalogConfig icebergCatalogConfig = loadIcebergCatalogConfig(icebergCatalogConfigInput);
-
-    String sourceFormat = datasetConfig.sourceFormat;
-    customConfig = getCustomConfigurations(cmd, CLIENTS_CONFIG_PATH);
-    TableFormatClients tableFormatClients = loadTableFormatClientConfigs(customConfig);
-    ClientConfig sourceClientConfig = tableFormatClients.getTableFormatsClients().get(sourceFormat);
-    if (sourceClientConfig == null) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Source format %s is not supported. Known source and target formats are %s",
-              sourceFormat, tableFormatClients.getTableFormatsClients().keySet()));
-    }
-    String sourceProviderClass = sourceClientConfig.sourceClientProviderClass;
-    SourceClientProvider<?> sourceClientProvider =
-        ReflectionUtils.createInstanceOfClass(sourceProviderClass);
-    sourceClientProvider.init(hadoopConf, sourceClientConfig.configuration);
-
-    List<io.onetable.model.storage.TableFormat> tableFormatList =
-        datasetConfig.getTargetFormats().stream()
-            .map(TableFormat::valueOf)
-            .collect(Collectors.toList());
-    OneTableClient client = new OneTableClient(hadoopConf);
-    for (DatasetConfig.Table table : datasetConfig.getDatasets()) {
-      log.info(
-          "Running sync for basePath {} for following table formats {}",
-          table.getTableBasePath(),
-          tableFormatList);
-      PerTableConfig config =
-          PerTableConfig.builder()
-              .tableBasePath(table.getTableBasePath())
-              .tableName(table.getTableName())
-              .namespace(table.getNamespace() == null ? null : table.getNamespace().split("\\."))
-              .tableDataPath(table.getTableDataPath())
-              .icebergCatalogConfig(icebergCatalogConfig)
-              .hudiSourceConfig(
-                  HudiSourceConfig.builder()
-                      .partitionSpecExtractorClass(
-                          ConfigurationBasedPartitionSpecExtractor.class.getName())
-                      .partitionFieldSpecConfig(table.getPartitionSpec())
-                      .build())
-              .targetTableFormats(tableFormatList)
-              .syncMode(SyncMode.INCREMENTAL)
-              .build();
-      try {
-        client.sync(config, sourceClientProvider);
-      } catch (Exception e) {
-        log.error(String.format("Error running sync for %s", table.getTableBasePath()), e);
-      }
-    }
-  }
-
-  private static byte[] getCustomConfigurations(CommandLine cmd, String option) throws IOException {
-    byte[] customConfig = null;
-    if (cmd.hasOption(option)) {
-      customConfig = Files.readAllBytes(Paths.get(cmd.getOptionValue(option)));
-    }
-    return customConfig;
-  }
-
-  @VisibleForTesting
-  static Configuration loadHadoopConf(byte[] customConfig) {
-    Configuration conf = new Configuration();
-    conf.addResource("onetable-hadoop-defaults.xml");
-    if (customConfig != null) {
-      conf.addResource(new ByteArrayInputStream(customConfig), "customConfigStream");
-    }
-    return conf;
-  }
-
-  /**
-   * Loads the client configs. The method first loads the default configs and then merges any custom
-   * configs provided by the user.
-   *
-   * @param customConfigs the custom configs provided by the user
-   * @return available tableFormatsClients and their configs
-   */
-  @VisibleForTesting
-  static TableFormatClients loadTableFormatClientConfigs(byte[] customConfigs) throws IOException {
-    // get resource stream from default client config yaml file
-    try (InputStream inputStream =
-        RunSync.class.getClassLoader().getResourceAsStream("onetable-client-defaults.yaml")) {
-      TableFormatClients clients = YAML_MAPPER.readValue(inputStream, TableFormatClients.class);
-      if (customConfigs != null) {
-        YAML_MAPPER.readerForUpdating(clients).readValue(customConfigs);
-      }
-      return clients;
-    }
-  }
-
-  @VisibleForTesting
-  static IcebergCatalogConfig loadIcebergCatalogConfig(byte[] customConfigs) throws IOException {
-    return customConfigs == null
-        ? null
-        : YAML_MAPPER.readValue(customConfigs, IcebergCatalogConfig.class);
-  }
-
-  @Data
-  public static class DatasetConfig {
-
-    /**
-     * Table format of the source table. This is a {@link TableFormat} value. Although the format of
-     * the source can be auto-detected, it is recommended to specify it explicitly for cases where
-     * the directory contains metadata of multiple formats.
-     */
-    String sourceFormat;
-
-    /** The target formats to sync to. This is a list of {@link TableFormat} values. */
-    List<String> targetFormats;
-
-    /** Configuration of the dataset to sync, path, table name, etc. */
-    List<Table> datasets;
-
-    @Data
-    public static class Table {
-      /**
-       * The base path of the table to sync. Any authentication configuration needed by HDFS client
-       * can be provided using hadoop config file
-       */
-      String tableBasePath;
-
-      String tableDataPath;
-
-      String tableName;
-      String partitionSpec;
-      String namespace;
-    }
-  }
-
-  @Data
-  public static class TableFormatClients {
-    /** Map of table format name to the client configs. */
-    @JsonProperty("tableFormatsClients")
-    @JsonMerge
-    Map<String, ClientConfig> tableFormatsClients;
-
-    @Data
-    public static class ClientConfig {
-      /** The class name of the source client which reads the table metadata. */
-      String sourceClientProviderClass;
-
-      /** The class name of the target client which writes the table metadata. */
-      String targetClientProviderClass;
-
-      /** the configuration specific to the table format. */
-      @JsonMerge Map<String, String> configuration;
-    }
+    Configuration hadoopConf = loadHadoopConf(getCustomConfigurations(cmd, HADOOP_CONFIG_PATH));
+    IcebergCatalogConfig icebergCatalogConfig = loadIcebergCatalogConfig(getCustomConfigurations(cmd, ICEBERG_CATALOG_CONFIG_PATH));
+    TableFormatClients tableFormatClients = loadTableFormatClientConfigs(getCustomConfigurations(cmd, CLIENTS_CONFIG_PATH));
+    Orchestrator orchestrator = new Orchestrator(datasetConfig, hadoopConf, icebergCatalogConfig, tableFormatClients);
+    orchestrator.Sync();
   }
 }
