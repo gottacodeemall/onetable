@@ -104,7 +104,7 @@ public class Configurations {
   }
 
   @VisibleForTesting
-  static Configuration loadHadoopConf(byte[] customConfig) {
+  public static Configuration loadHadoopConf(byte[] customConfig) {
     Configuration conf = new Configuration();
     conf.addResource("onetable-hadoop-defaults.xml");
     if (customConfig != null) {
@@ -121,7 +121,7 @@ public class Configurations {
    * @return available tableFormatsClients and their configs
    */
   @VisibleForTesting
-  static TableFormatClients loadTableFormatClientConfigs(byte[] customConfigs) throws IOException {
+  public static TableFormatClients loadTableFormatClientConfigs(byte[] customConfigs) throws IOException {
     // get resource stream from default client config yaml file
     try (InputStream inputStream =
         RunSync.class.getClassLoader().getResourceAsStream("onetable-client-defaults.yaml")) {
@@ -134,7 +134,7 @@ public class Configurations {
   }
 
   @VisibleForTesting
-  static IcebergCatalogConfig loadIcebergCatalogConfig(byte[] customConfigs) throws IOException {
+  public static IcebergCatalogConfig loadIcebergCatalogConfig(byte[] customConfigs) throws IOException {
     return customConfigs == null
         ? null
         : YAML_MAPPER.readValue(customConfigs, IcebergCatalogConfig.class);
