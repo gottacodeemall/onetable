@@ -95,26 +95,6 @@ public class Configurations {
     }
   }
 
-  public static class OneTableClientConfigurations {
-    public Configuration hadoopConfigs;
-    public TableFormatClients tableFormatClients;
-    public IcebergCatalogConfig IcebergCatalogConfig;
-
-    OneTableClientConfigurations(
-        Configuration hadoopConfigs,
-        TableFormatClients tableFormatClients,
-        IcebergCatalogConfig IcebergCatalogConfig) {
-      this.hadoopConfigs = hadoopConfigs;
-      this.tableFormatClients = tableFormatClients;
-      this.IcebergCatalogConfig = IcebergCatalogConfig;
-    }
-  }
-
-  public static OneTableClientConfigurations GetDefaultOneTableClientConfigs() throws IOException {
-    return new OneTableClientConfigurations(
-        loadHadoopConf(null), loadTableFormatClientConfigs(null), loadIcebergCatalogConfig(null));
-  }
-
   static byte[] getCustomConfigurations(CommandLine cmd, String option) throws IOException {
     byte[] customConfig = null;
     if (cmd.hasOption(option)) {

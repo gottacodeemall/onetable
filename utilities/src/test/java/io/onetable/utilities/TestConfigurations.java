@@ -18,6 +18,8 @@
  
 package io.onetable.utilities;
 
+import static io.onetable.utilities.Configurations.*;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -26,9 +28,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.onetable.iceberg.IcebergCatalogConfig;
-import static io.onetable.utilities.Configurations.*;
 
-class TestRunSync {
+class TestConfigrations {
 
   /** Tests that the default hadoop configs are loaded. */
   @Test
