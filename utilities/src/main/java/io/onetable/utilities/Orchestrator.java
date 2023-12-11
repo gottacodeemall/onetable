@@ -57,7 +57,7 @@ public class Orchestrator {
     this.client = new OneTableClient(this.hadoopConf);
   }
 
-  public void Sync() {
+  public String Sync() {
     String sourceFormat = datasetConfig.sourceFormat;
     TableFormatClients.ClientConfig sourceClientConfig =
         tableFormatClients.getTableFormatsClients().get(sourceFormat);
@@ -76,6 +76,8 @@ public class Orchestrator {
         datasetConfig.getTargetFormats().stream()
             .map(TableFormat::valueOf)
             .collect(Collectors.toList());
+    
+    String errors = "";
     for (DatasetConfig.Table table : datasetConfig.getDatasets()) {
       log.info(
           "Running sync for basePath {} for following table formats {}",
@@ -102,7 +104,10 @@ public class Orchestrator {
         client.sync(config, sourceClientProvider);
       } catch (Exception e) {
         log.error(String.format("Error running sync for %s", table.getTableBasePath()), e);
+        errors += String.format("Error running sync for %s : %s \n", table.getTableBasePath(), e.getMessage());
       }
     }
+
+    return errors;
   }
 }
