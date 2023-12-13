@@ -77,7 +77,7 @@ public class Orchestrator {
             .map(TableFormat::valueOf)
             .collect(Collectors.toList());
     
-    String errors = "";
+    StringBuilder errors = new StringBuilder();
     for (DatasetConfig.Table table : datasetConfig.getDatasets()) {
       log.info(
           "Running sync for basePath {} for following table formats {}",
@@ -104,10 +104,10 @@ public class Orchestrator {
         client.sync(config, sourceClientProvider);
       } catch (Exception e) {
         log.error(String.format("Error running sync for %s", table.getTableBasePath()), e);
-        errors += String.format("Error running sync for %s : %s \n", table.getTableBasePath(), e.getMessage());
+        errors.append(String.format("Error running sync for %s : %s \n", table.getTableBasePath(), e.getMessage()));
       }
     }
 
-    return errors;
+    return errors.toString();
   }
 }
