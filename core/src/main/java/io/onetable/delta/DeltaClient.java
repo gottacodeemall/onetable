@@ -82,6 +82,7 @@ public class DeltaClient implements TargetClient {
 
   public DeltaClient(PerTableConfig perTableConfig, SparkSession sparkSession) {
     this(
+        perTableConfig.getTableBasePath(),
         perTableConfig.getTableDataPath(),
         perTableConfig.getTableName(),
         perTableConfig.getTargetMetadataRetentionInHours(),
@@ -93,6 +94,7 @@ public class DeltaClient implements TargetClient {
 
   @VisibleForTesting
   DeltaClient(
+      String tableBasePath,
       String tableDataPath,
       String tableName,
       int logRetentionInHours,
@@ -102,6 +104,7 @@ public class DeltaClient implements TargetClient {
       DeltaDataFileUpdatesExtractor dataFileUpdatesExtractor) {
 
     _init(
+        tableBasePath,
         tableDataPath,
         tableName,
         logRetentionInHours,
@@ -112,14 +115,15 @@ public class DeltaClient implements TargetClient {
   }
 
   private void _init(
-      String tableDataPath,
+      String sourceTableBasePath,
+      String targetTableBasePath,
       String tableName,
       int logRetentionInHours,
       SparkSession sparkSession,
       DeltaSchemaExtractor schemaExtractor,
       DeltaPartitionExtractor partitionExtractor,
       DeltaDataFileUpdatesExtractor dataFileUpdatesExtractor) {
-    DeltaLog deltaLog = DeltaLog.forTable(sparkSession, tableDataPath);
+    DeltaLog deltaLog = DeltaLog.forTable(sparkSession, targetTableBasePath);
     boolean deltaTableExists = deltaLog.tableExists();
     if (!deltaTableExists) {
       deltaLog.ensureLogDirectoryExist();
@@ -130,6 +134,8 @@ public class DeltaClient implements TargetClient {
     this.deltaLog = deltaLog;
     this.tableName = tableName;
     this.logRetentionInHours = logRetentionInHours;
+
+    this.dataFileUpdatesExtractor.setSourceTableBasePath(sourceTableBasePath);
   }
 
   @Override
@@ -137,6 +143,7 @@ public class DeltaClient implements TargetClient {
     SparkSession sparkSession = DeltaClientUtils.buildSparkSession(configuration);
 
     _init(
+        perTableConfig.getTableBasePath(),
         perTableConfig.getTableDataPath(),
         perTableConfig.getTableName(),
         perTableConfig.getTargetMetadataRetentionInHours(),

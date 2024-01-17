@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import lombok.Builder;
 
+import lombok.Setter;
 import org.apache.spark.sql.delta.DeltaLog;
 import org.apache.spark.sql.delta.actions.Action;
 import org.apache.spark.sql.delta.actions.AddFile;
@@ -58,6 +59,9 @@ public class DeltaDataFileUpdatesExtractor {
   @Builder.Default
   private final DeltaDataFileExtractor deltaDataFileExtractor =
       DeltaDataFileExtractor.builder().build();
+
+  @Setter
+  private String sourceTableBasePath;
 
   public Seq<Action> applySnapshot(
       DeltaLog deltaLog, List<OneFileGroup> partitionedDataFiles, OneSchema tableSchema) {
@@ -97,17 +101,36 @@ public class DeltaDataFileUpdatesExtractor {
 
   private Stream<AddFile> createAddFileAction(
       OneDataFile dataFile, OneSchema schema, String tableBasePath) {
+    String resolvedPath = migrateDataFile(dataFile, tableBasePath);
+
     return Stream.of(
         new AddFile(
             // Delta Lake supports relative and absolute paths in theory but relative paths seem
             // more commonly supported by query engines in our testing
-            PathUtils.getRelativePath(dataFile.getPhysicalPath(), tableBasePath),
+            PathUtils.getRelativePath(resolvedPath, tableBasePath),
             convertJavaMapToScala(deltaPartitionExtractor.partitionValueSerialization(dataFile)),
             dataFile.getFileSizeBytes(),
             dataFile.getLastModified(),
             true,
             getColumnStats(schema, dataFile.getRecordCount(), dataFile.getColumnStats()),
             null));
+  }
+
+  /**
+   * Scenarios:
+   * 1. data file path s3://A/B/data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath adls://X/Y
+   *    --> adls://X/Y/data/1.parquet
+   * 2. data file path adls://A/B/data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath s3://A/B
+   *    --> adls://A/B/data/1.parquet
+   * 3. data file path data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath adls://X/Y
+   *    --> data/1.parquet
+   */
+  private String migrateDataFile(OneDataFile dataFile, String targetTableBasePath) {
+    String dataFilePath = dataFile.getPhysicalPath();
+    if (dataFilePath.startsWith(sourceTableBasePath)) {
+      return dataFilePath.replace(sourceTableBasePath, targetTableBasePath);
+    }
+    return dataFilePath;
   }
 
   private String getColumnStats(OneSchema schema, long recordCount, List<ColumnStat> columnStats) {
