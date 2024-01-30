@@ -19,12 +19,16 @@
 package io.onetable.model.storage;
 
 /**
- * Default enumeration of supported Table Formats
+ * Default constants for supported Table Formats
  *
  * @since 0.1
  */
-public enum TableFormat {
-  HUDI,
-  ICEBERG,
-  DELTA
+public class TableFormat {
+  public static final String HUDI = "HUDI";
+  public static final String ICEBERG = "ICEBERG";
+  public static final String DELTA = "DELTA";
+
+  public static String[] values() {
+    return new String[] {"HUDI", "ICEBERG", "DELTA"};
+  }
 }

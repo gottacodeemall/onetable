@@ -36,10 +36,10 @@ import org.apache.hudi.sync.common.HoodieSyncTool;
 
 import io.onetable.client.OneTableClient;
 import io.onetable.client.PerTableConfig;
+import io.onetable.client.PerTableConfigImpl;
 import io.onetable.hudi.HudiSourceClientProvider;
-import io.onetable.hudi.HudiSourceConfig;
+import io.onetable.hudi.HudiSourceConfigImpl;
 import io.onetable.model.schema.PartitionTransformType;
-import io.onetable.model.storage.TableFormat;
 import io.onetable.model.sync.SyncMode;
 import io.onetable.model.sync.SyncResult;
 
@@ -57,26 +57,26 @@ public class OneTableSyncTool extends HoodieSyncTool {
 
   @Override
   public void syncHoodieTable() {
-    List<TableFormat> formatsToSync =
+    List<String> formatsToSync =
         Arrays.stream(config.getString(OneTableSyncConfig.ONE_TABLE_FORMATS).split(","))
-            .map(format -> TableFormat.valueOf(format.toUpperCase()))
+            .map(format -> format.toUpperCase())
             .collect(Collectors.toList());
     String basePath = config.getString(HoodieSyncConfig.META_SYNC_BASE_PATH);
     String tableName = config.getString(HoodieTableConfig.HOODIE_TABLE_NAME_KEY);
     PerTableConfig perTableConfig =
-        PerTableConfig.builder()
+        PerTableConfigImpl.builder()
             .tableName(tableName)
             .tableBasePath(basePath)
             .targetTableFormats(formatsToSync)
             .hudiSourceConfig(
-                HudiSourceConfig.builder()
+                HudiSourceConfigImpl.builder()
                     .partitionFieldSpecConfig(getPartitionSpecConfig())
                     .build())
             .syncMode(SyncMode.INCREMENTAL)
             .targetMetadataRetentionInHours(
                 config.getInt(OneTableSyncConfig.ONE_TABLE_TARGET_METADATA_RETENTION_HOURS))
             .build();
-    Map<TableFormat, SyncResult> results =
+    Map<String, SyncResult> results =
         new OneTableClient(hadoopConf).sync(perTableConfig, hudiSourceClientProvider);
     String failingFormats =
         results.entrySet().stream()

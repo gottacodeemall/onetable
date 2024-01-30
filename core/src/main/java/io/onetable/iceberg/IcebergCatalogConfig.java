@@ -27,7 +27,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class IcebergCatalogConfig {
+public class IcebergCatalogConfig implements io.onetable.client.CatalogConfig {
   @NonNull String catalogImpl;
   @NonNull String catalogName;
   @NonNull @Builder.Default Map<String, String> catalogOptions = Collections.emptyMap();
