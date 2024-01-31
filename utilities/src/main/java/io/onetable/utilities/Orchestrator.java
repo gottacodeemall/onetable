@@ -33,7 +33,6 @@ import io.onetable.client.PerTableConfig;
 import io.onetable.client.PerTableConfigImpl;
 import io.onetable.client.SourceClientProvider;
 import io.onetable.hudi.ConfigurationBasedPartitionSpecExtractor;
-import io.onetable.hudi.HudiSourceConfig;
 import io.onetable.hudi.HudiSourceConfigImpl;
 import io.onetable.iceberg.IcebergCatalogConfig;
 import io.onetable.model.storage.TableFormat;
