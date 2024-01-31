@@ -123,7 +123,7 @@ public class RunSync {
     TableFormatClients tableFormatClients =
         loadTableFormatClientConfigs(getCustomConfigurations(cmd, CLIENTS_CONFIG_PATH));
     Orchestrator orchestrator =
-        new Orchestrator(datasetConfig, hadoopConf, icebergCatalogConfig, tableFormatClients);
+        new Orchestrator(datasetConfig, hadoopConf, hadoopConf, icebergCatalogConfig, tableFormatClients);
     orchestrator.Sync();
   }
 }

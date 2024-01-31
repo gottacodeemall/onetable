@@ -44,21 +44,22 @@ import io.onetable.utilities.Configurations.TableFormatClients;
 @Log4j2
 public class Orchestrator {
   private DatasetConfig datasetConfig;
-  private Configuration hadoopConf;
+  private Configuration sourceHadoopConf;
+  private Configuration targetHadoopConf;
   private IcebergCatalogConfig icebergCatalogConfig;
   private TableFormatClients tableFormatClients;
-  private OneTableClient client;
 
   public Orchestrator(
       DatasetConfig datasetConfig,
-      Configuration hadoopConf,
+      Configuration sourceHadoopConf,
+      Configuration targetHadoopConf,
       IcebergCatalogConfig icebergCatalogConfig,
       TableFormatClients tableFormatClients) {
     this.datasetConfig = datasetConfig;
-    this.hadoopConf = hadoopConf;
+    this.sourceHadoopConf = sourceHadoopConf;
+    this.targetHadoopConf = targetHadoopConf;
     this.icebergCatalogConfig = icebergCatalogConfig;
     this.tableFormatClients = tableFormatClients;
-    this.client = new OneTableClient(this.hadoopConf);
   }
 
   public String Sync() {
@@ -73,10 +74,10 @@ public class Orchestrator {
     String sourceProviderClass = sourceClientConfig.sourceClientProviderClass;
     SourceClientProvider<?> sourceClientProvider =
         ReflectionUtils.createInstanceOfClass(sourceProviderClass);
-    sourceClientProvider.init(hadoopConf, sourceClientConfig.configuration);
+    sourceClientProvider.init(this.sourceHadoopConf, sourceClientConfig.configuration);
 
     List<String> tableFormatList = datasetConfig.getTargetFormats();
-    OneTableClient client = new OneTableClient(hadoopConf);
+    OneTableClient client = new OneTableClient(this.targetHadoopConf);
     StringBuilder errors = new StringBuilder();
     for (DatasetConfig.Table table : datasetConfig.getDatasets()) {
       log.info(
