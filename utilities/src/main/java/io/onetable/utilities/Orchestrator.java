@@ -18,6 +18,9 @@
  
 package io.onetable.utilities;
 
+import static io.onetable.utilities.Configurations.getCustomConfigurations;
+import static io.onetable.utilities.Configurations.loadTableFormatClientConfigs;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,9 +30,11 @@ import org.apache.hadoop.conf.Configuration;
 
 import io.onetable.client.OneTableClient;
 import io.onetable.client.PerTableConfig;
+import io.onetable.client.PerTableConfigImpl;
 import io.onetable.client.SourceClientProvider;
 import io.onetable.hudi.ConfigurationBasedPartitionSpecExtractor;
 import io.onetable.hudi.HudiSourceConfig;
+import io.onetable.hudi.HudiSourceConfigImpl;
 import io.onetable.iceberg.IcebergCatalogConfig;
 import io.onetable.model.storage.TableFormat;
 import io.onetable.model.sync.SyncMode;
@@ -59,8 +64,7 @@ public class Orchestrator {
 
   public String Sync() {
     String sourceFormat = datasetConfig.sourceFormat;
-    TableFormatClients.ClientConfig sourceClientConfig =
-        tableFormatClients.getTableFormatsClients().get(sourceFormat);
+    TableFormatClients.ClientConfig sourceClientConfig = tableFormatClients.getTableFormatsClients().get(sourceFormat);
     if (sourceClientConfig == null) {
       throw new IllegalArgumentException(
           String.format(
@@ -72,27 +76,23 @@ public class Orchestrator {
         ReflectionUtils.createInstanceOfClass(sourceProviderClass);
     sourceClientProvider.init(hadoopConf, sourceClientConfig.configuration);
 
-    List<TableFormat> tableFormatList =
-        datasetConfig.getTargetFormats().stream()
-            .map(TableFormat::valueOf)
-            .collect(Collectors.toList());
-    
+    List<String> tableFormatList = datasetConfig.getTargetFormats();
+    OneTableClient client = new OneTableClient(hadoopConf);
     StringBuilder errors = new StringBuilder();
     for (DatasetConfig.Table table : datasetConfig.getDatasets()) {
       log.info(
           "Running sync for basePath {} for following table formats {}",
           table.getTableBasePath(),
           tableFormatList);
-
       PerTableConfig config =
-          PerTableConfig.builder()
+          PerTableConfigImpl.builder()
               .tableBasePath(table.getTableBasePath())
               .tableName(table.getTableName())
               .namespace(table.getNamespace() == null ? null : table.getNamespace().split("\\."))
               .tableDataPath(table.getTableDataPath())
               .icebergCatalogConfig(icebergCatalogConfig)
               .hudiSourceConfig(
-                  HudiSourceConfig.builder()
+                  HudiSourceConfigImpl.builder()
                       .partitionSpecExtractorClass(
                           ConfigurationBasedPartitionSpecExtractor.class.getName())
                       .partitionFieldSpecConfig(table.getPartitionSpec())
