@@ -77,6 +77,7 @@ public class DeltaClient implements TargetClient {
   private String tableName;
   private int logRetentionInHours;
   private TransactionState transactionState;
+  private SparkSession sparkSession;
 
   public DeltaClient() {}
 
@@ -140,7 +141,7 @@ public class DeltaClient implements TargetClient {
 
   @Override
   public void init(PerTableConfig perTableConfig, Configuration configuration) {
-    SparkSession sparkSession = DeltaClientUtils.buildSparkSession(configuration);
+    sparkSession = DeltaClientUtils.buildSparkSession(configuration);
 
     _init(
         perTableConfig.getTableBasePath(),
@@ -204,6 +205,9 @@ public class DeltaClient implements TargetClient {
   public void completeSync() {
     transactionState.commitTransaction();
     transactionState = null;
+    if (sparkSession != null) {
+      sparkSession.stop();
+    }
   }
 
   @Override
