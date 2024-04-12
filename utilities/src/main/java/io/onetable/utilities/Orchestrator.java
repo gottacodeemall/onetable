@@ -18,11 +18,7 @@
  
 package io.onetable.utilities;
 
-import static io.onetable.utilities.Configurations.getCustomConfigurations;
-import static io.onetable.utilities.Configurations.loadTableFormatClientConfigs;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -35,7 +31,6 @@ import io.onetable.client.SourceClientProvider;
 import io.onetable.hudi.ConfigurationBasedPartitionSpecExtractor;
 import io.onetable.hudi.HudiSourceConfigImpl;
 import io.onetable.iceberg.IcebergCatalogConfig;
-import io.onetable.model.storage.TableFormat;
 import io.onetable.model.sync.SyncMode;
 import io.onetable.reflection.ReflectionUtils;
 import io.onetable.utilities.Configurations.DatasetConfig;
@@ -64,7 +59,8 @@ public class Orchestrator {
 
   public String Sync() {
     String sourceFormat = datasetConfig.sourceFormat;
-    TableFormatClients.ClientConfig sourceClientConfig = tableFormatClients.getTableFormatsClients().get(sourceFormat);
+    TableFormatClients.ClientConfig sourceClientConfig =
+        tableFormatClients.getTableFormatsClients().get(sourceFormat);
     if (sourceClientConfig == null) {
       throw new IllegalArgumentException(
           String.format(
@@ -104,7 +100,9 @@ public class Orchestrator {
         client.sync(config, sourceClientProvider);
       } catch (Exception e) {
         log.error(String.format("Error running sync for %s", table.getTableBasePath()), e);
-        errors.append(String.format("Error running sync for %s : %s \n", table.getTableBasePath(), e.getMessage()));
+        errors.append(
+            String.format(
+                "Error running sync for %s : %s \n", table.getTableBasePath(), e.getMessage()));
       }
     }
 

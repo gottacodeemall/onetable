@@ -121,7 +121,8 @@ public class Configurations {
    * @return available tableFormatsClients and their configs
    */
   @VisibleForTesting
-  public static TableFormatClients loadTableFormatClientConfigs(byte[] customConfigs) throws IOException {
+  public static TableFormatClients loadTableFormatClientConfigs(byte[] customConfigs)
+      throws IOException {
     // get resource stream from default client config yaml file
     try (InputStream inputStream =
         RunSync.class.getClassLoader().getResourceAsStream("onetable-client-defaults.yaml")) {
@@ -134,7 +135,8 @@ public class Configurations {
   }
 
   @VisibleForTesting
-  public static IcebergCatalogConfig loadIcebergCatalogConfig(byte[] customConfigs) throws IOException {
+  public static IcebergCatalogConfig loadIcebergCatalogConfig(byte[] customConfigs)
+      throws IOException {
     return customConfigs == null
         ? null
         : YAML_MAPPER.readValue(customConfigs, IcebergCatalogConfig.class);

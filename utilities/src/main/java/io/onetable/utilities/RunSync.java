@@ -20,15 +20,11 @@ package io.onetable.utilities;
 
 import static io.onetable.utilities.Configurations.*;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
 
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
 import org.apache.commons.cli.CommandLine;
@@ -43,14 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import io.onetable.client.OneTableClient;
-import io.onetable.client.PerTableConfig;
-import io.onetable.client.PerTableConfigImpl;
-import io.onetable.client.SourceClientProvider;
-import io.onetable.hudi.ConfigurationBasedPartitionSpecExtractor;
-import io.onetable.hudi.HudiSourceConfigImpl;
 import io.onetable.iceberg.IcebergCatalogConfig;
-import io.onetable.model.storage.TableFormat;
 
 /**
  * Provides a standalone runner for the sync process. See README.md for more details on how to run
@@ -123,8 +112,8 @@ public class RunSync {
     TableFormatClients tableFormatClients =
         loadTableFormatClientConfigs(getCustomConfigurations(cmd, CLIENTS_CONFIG_PATH));
     Orchestrator orchestrator =
-        new Orchestrator(datasetConfig, hadoopConf, hadoopConf, icebergCatalogConfig, tableFormatClients);
+        new Orchestrator(
+            datasetConfig, hadoopConf, hadoopConf, icebergCatalogConfig, tableFormatClients);
     orchestrator.Sync();
   }
 }
-

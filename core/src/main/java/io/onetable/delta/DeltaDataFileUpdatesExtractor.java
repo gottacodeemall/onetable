@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import lombok.Builder;
-
 import lombok.Setter;
+
 import org.apache.spark.sql.delta.DeltaLog;
 import org.apache.spark.sql.delta.actions.Action;
 import org.apache.spark.sql.delta.actions.AddFile;
@@ -60,8 +60,7 @@ public class DeltaDataFileUpdatesExtractor {
   private final DeltaDataFileExtractor deltaDataFileExtractor =
       DeltaDataFileExtractor.builder().build();
 
-  @Setter
-  private String sourceTableBasePath;
+  @Setter private String sourceTableBasePath;
 
   public Seq<Action> applySnapshot(
       DeltaLog deltaLog, List<OneFileGroup> partitionedDataFiles, OneSchema tableSchema) {
@@ -117,13 +116,11 @@ public class DeltaDataFileUpdatesExtractor {
   }
 
   /**
-   * Scenarios:
-   * 1. data file path s3://A/B/data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath adls://X/Y
-   *    --> adls://X/Y/data/1.parquet
-   * 2. data file path adls://A/B/data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath s3://A/B
-   *    --> adls://A/B/data/1.parquet
-   * 3. data file path data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath adls://X/Y
-   *    --> data/1.parquet
+   * Scenarios: 1. data file path s3://A/B/data/1.parquet, sourceTableBasePath s3://A/B,
+   * targetTableBasePath adls://X/Y --> adls://X/Y/data/1.parquet 2. data file path
+   * adls://A/B/data/1.parquet, sourceTableBasePath s3://A/B, targetTableBasePath s3://A/B -->
+   * adls://A/B/data/1.parquet 3. data file path data/1.parquet, sourceTableBasePath s3://A/B,
+   * targetTableBasePath adls://X/Y --> data/1.parquet
    */
   private String migrateDataFile(OneDataFile dataFile, String targetTableBasePath) {
     String dataFilePath = dataFile.getPhysicalPath();
